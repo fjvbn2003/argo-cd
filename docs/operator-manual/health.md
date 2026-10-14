@@ -17,8 +17,20 @@ with at least one value for `hostname` or `IP`.
 * The `status.loadBalancer.ingress` list is non-empty, with at least one value for `hostname` or `IP`.
 
 ### CronJob
-* If the last scheduled job for this CronJob failed, the CronJob will be marked as "Degraded"
-* If the last scheduled job for this CronJob is running, the CronJob will be marked as "Progressing"
+* If the last scheduled job for this CronJob failed and no job is running, the CronJob will be marked as "Degraded".
+* If a job of this CronJob is running, the CronJob will be marked as "Healthy". The CronJob status does not tell
+  whether the previous execution succeeded, so a "Degraded" CronJob becomes "Healthy" again while its next job runs.
+* If the CronJob has not been scheduled yet, or has never completed a job successfully, it will be marked as "Healthy".
+* If the CronJob is suspended (`.spec.suspend` is `true`), it will be marked as "Healthy", not "Suspended".
+
+If you do not want a CronJob to affect the health of its Application, you can either:
+
+* set the `argocd.argoproj.io/ignore-healthcheck: "true"` annotation on the CronJob (see
+  [Ignoring Child Resource Health Check in Applications](#ignoring-child-resource-health-check-in-applications)), or
+* override the built-in health check with the `resource.customizations.health.batch_CronJob` key in the `argocd-cm`
+  ConfigMap (see [Custom Health Checks](#custom-health-checks)).
+
+See the [3.1 to 3.2 upgrade notes](upgrading/3.1-3.2.md#cronjob-health) for details.
 
 ### Job
 * If job `.spec.suspended` is set to 'true', then the job and app health will be marked as suspended.
